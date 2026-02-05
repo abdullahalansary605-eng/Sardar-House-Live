@@ -13,7 +13,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 # ডাটাবেজ
 products = {}
-ADMIN_PASSWORD = "admin123"
+ADMIN_PASSWORD = "1212716274"
 
 def get_layout(content_html, active_page):
     menu_items = [('home', 'হোম'), ('shop', 'শপ'), ('about', 'আমাদের সম্পর্কে জানুন'), ('contact', 'যোগাযোগ'), ('policy', 'রিটার্ন পলিসি')]
@@ -146,4 +146,5 @@ def policy():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
