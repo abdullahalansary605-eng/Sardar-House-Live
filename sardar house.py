@@ -44,7 +44,7 @@ def get_layout(content, active_page):
                 background-size: 32px 32px;
                 color: #D4AF37; 
                 font-family: 'Segoe UI', sans-serif;
-                margin-top: 80px;
+                margin-top: 100px;
             }}
             .navbar {{
                 background: rgba(0,0,0,0.95);
@@ -66,20 +66,21 @@ def get_layout(content, active_page):
                 color: #D4AF37 !important;
                 text-shadow: 0 0 10px rgba(212,175,55,0.5);
             }}
-            .container {{ max-width: 1100px; }}
             .card-premium {{
                 background: rgba(20,20,20,0.8);
                 border: 1px solid rgba(255,255,255,0.05);
                 border-radius: 20px;
                 padding: 30px;
                 margin-bottom: 30px;
+                backdrop-filter: blur(10px);
             }}
             .whatsapp-btn {{
                 background: #25D366; color: white !important;
                 padding: 10px 20px; border-radius: 10px;
                 text-decoration: none; font-weight: bold; display: block; text-align: center;
+                transition: 0.3s;
             }}
-            .price {{ font-size: 1.5rem; color: #fff; margin: 10px 0; }}
+            .whatsapp-btn:hover {{ transform: scale(1.05); background: #1eb954; }}
         </style>
     </head>
     <body>
@@ -102,41 +103,41 @@ def get_layout(content, active_page):
 def home():
     content = """
     <div class="text-center py-5">
-        <h1 class="display-2 fw-bold">WELCOME TO SARDAR HOUSE</h1>
-        <p class="lead text-secondary">আপনার আভিজাত্যের প্রতীক - প্রিমিয়াম পাঞ্জাবি কালেকশন</p>
-        <a href="/shop" class="btn btn-outline-warning btn-lg mt-4">শপ ভিজিট করুন</a>
+        <h1 class="display-2 fw-bold" style="color:#D4AF37;">WELCOME TO SARDAR HOUSE</h1>
+        <p class="lead text-secondary text-uppercase" style="letter-spacing:3px;">আপনার আভিজাত্যের প্রতীক - প্রিমিয়াম পাঞ্জাবি কালেকশন</p>
+        <a href="/shop" class="btn btn-outline-warning btn-lg mt-4 px-5 py-3 fw-bold">শপ ভিজিট করুন</a>
     </div>
     """
     return render_template_string(get_layout(content, 'home'))
 
 @app.route('/shop')
 def shop():
+    content = ""
     if not products:
-        content = '<div class="card-premium text-center"><h3>বর্তমানে কোনো পণ্য নেই। নিচে থেকে যোগ করুন।</h3></div>'
+        content += '<div class="card-premium text-center"><h3>বর্তমানে কোনো পণ্য নেই। নিচে থেকে যোগ করুন।</h3></div>'
     else:
-        content = '<div class="row g-4">'
+        content += '<div class="row g-4">'
         for pid, p in products.items():
             img_url = url_for('static', filename=p['img'])
             wa_link = f"https://wa.me/8801877278210?text=আসসালামু আলাইকুম, আমি এই পাঞ্জাবিটি কিনতে চাই: {p['name']}"
             content += f'''
             <div class="col-md-4">
-                <div class="card-premium h-100">
+                <div class="card-premium h-100 shadow-lg">
                     <img src="{img_url}" class="w-100 rounded-3 mb-3" style="height:300px; object-fit:cover;">
-                    <h4>{p['name']}</h4>
-                    <div class="price">{p['price']}</div>
+                    <h4 class="fw-bold">{p['name']}</h4>
+                    <h5 class="text-white my-3">৳ {p['price']}</h5>
                     <a href="{wa_link}" target="_blank" class="whatsapp-btn">WhatsApp অর্ডার</a>
                 </div>
             </div>'''
         content += '</div>'
     
-    # অ্যাডমিন প্যানেল শপ পেজের নিচেই রাখা হলো আপনার সুবিধার জন্য
     content += """
-    <div class="card-premium mt-5">
-        <h3 class="mb-4">নতুন পণ্য যোগ করুন (ম্যানেজমেন্ট)</h3>
+    <div class="card-premium mt-5 shadow-lg">
+        <h3 class="mb-4 text-center">নতুন পণ্য যোগ করুন (ম্যানেজমেন্ট)</h3>
         <form action="/add" method="POST" enctype="multipart/form-data" class="row g-3">
-            <div class="col-md-4"><input type="text" name="name" class="form-control bg-dark text-white" placeholder="নাম" required></div>
-            <div class="col-md-3"><input type="text" name="price" class="form-control bg-dark text-white" placeholder="দাম" required></div>
-            <div class="col-md-3"><input type="file" name="file" class="form-control bg-dark text-white" required></div>
+            <div class="col-md-4"><input type="text" name="name" class="form-control bg-dark text-white border-secondary" placeholder="পণ্যের নাম" required></div>
+            <div class="col-md-3"><input type="text" name="price" class="form-control bg-dark text-white border-secondary" placeholder="দাম (যেমন: ১২০০)" required></div>
+            <div class="col-md-3"><input type="file" name="file" class="form-control bg-dark text-white border-secondary" required></div>
             <div class="col-md-2"><button type="submit" class="btn btn-warning w-100 fw-bold">আপলোড</button></div>
         </form>
     </div>
@@ -146,9 +147,10 @@ def shop():
 @app.route('/about')
 def about():
     content = """
-    <div class="card-premium">
-        <h2>আমাদের সম্পর্কে</h2>
-        <p class="text-secondary">Sardar House একটি প্রিমিয়াম পাঞ্জাবি ব্র্যান্ড। আমরা গুণগত মান এবং আধুনিক ডিজাইনের সমন্বয়ে সেরা পোশাক নিশ্চিত করি।</p>
+    <div class="card-premium shadow-lg">
+        <h2 style="color:#D4AF37;">আমাদের সম্পর্কে</h2>
+        <hr border-secondary>
+        <p class="lead text-secondary">Sardar House একটি প্রিমিয়াম পাঞ্জাবি ব্র্যান্ড। আমরা গুণগত মান এবং আধুনিক ডিজাইনের সমন্বয়ে সেরা পোশাক নিশ্চিত করি। আমাদের প্রতিটি পাঞ্জাবি অত্যন্ত যত্ন সহকারে তৈরি করা হয় যেন তা আপনার ব্যক্তিত্বকে আরও আকর্ষণীয় করে তোলে।</p>
     </div>
     """
     return render_template_string(get_layout(content, 'about'))
@@ -156,11 +158,41 @@ def about():
 @app.route('/contact')
 def contact():
     content = """
-    <div class="card-premium">
-        <h2>যোগাযোগ</h2>
-        <p>ঠিকানা: ঢাকা, বাংলাদেশ</p>
-        <p>ফোন: 01877278210</p>
-        <p>হোয়াটসঅ্যাপ: সরাসরি মেসেজ দিন</p>
+    <div class="card-premium shadow-lg">
+        <h2 style="color:#D4AF37;">যোগাযোগ</h2>
+        <hr border-secondary>
+        <p class="h5 mb-3">📍 ঠিকানা: ঢাকা, বাংলাদেশ</p>
+        <p class="h5 mb-3">📞 ফোন: 01877278210</p>
+        <p class="h5">💬 হোয়াটসঅ্যাপ: সরাসরি মেসেজ দিতে শপ পেজ ভিজিট করুন।</p>
     </div>
     """
-    return render_template_string(get_layout
+    return render_template_string(get_layout(content, 'contact'))
+
+@app.route('/policy')
+def policy():
+    content = """
+    <div class="card-premium shadow-lg">
+        <h2 style="color:#D4AF37;">রিটার্ন ও রিফান্ড পলিসি</h2>
+        <hr border-secondary>
+        <div class="text-secondary h5">
+            <p>১. পাঞ্জাবির সাইজ না মিললে ৩ দিনের মধ্যে পরিবর্তনযোগ্য।</p>
+            <p>২. কোনো ছেঁড়া বা ত্রুটি থাকলে সাথে সাথে রিটার্ন নেওয়া হবে।</p>
+            <p>৩. রিফান্ডের ক্ষেত্রে ডেলিভারি চার্জ প্রযোজ্য হতে পারে।</p>
+        </div>
+    </div>
+    """
+    return render_template_string(get_layout(content, 'policy'))
+
+@app.route('/add', methods=['POST'])
+def add_product():
+    name = request.form.get('name')
+    price = request.form.get('price')
+    file = request.files.get('file')
+    if name and price and file:
+        filename = f"{name.replace(' ', '_')}.jpg"
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        products[str(len(products)+1)] = {'name': name, 'price': price, 'img': filename}
+    return redirect(url_for('shop'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
