@@ -16,7 +16,7 @@ products = {}
 ADMIN_PASSWORD = "admin123"
 
 def get_layout(content_html, active_page):
-    menu_items = [('home', 'হোম'), ('shop', 'শপ'), ('about', 'আমাদের সম্পর্কে'), ('contact', 'যোগাযোগ'), ('policy', 'রিটার্ন পলিসি')]
+    menu_items = [('home', 'হোম'), ('shop', 'শপ'), ('about', 'আমাদের সম্পর্কে জানুন'), ('contact', 'যোগাযোগ'), ('policy', 'রিটার্ন পলিসি')]
     nav_links = ""
     for route, label in menu_items:
         active_class = "active-link" if active_page == route else ""
@@ -146,3 +146,4 @@ def policy():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
