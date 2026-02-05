@@ -1,196 +1,109 @@
-from flask import Flask, render_template_string, request, redirect, url_for
 import os
+from flask import Flask, render_template_string, request, redirect, url_for
 
 app = Flask(__name__)
 
-# পণ্যের তালিকা (সাময়িকভাবে মেমরিতে থাকবে)
-products = []
+# ডিরেক্টরি পাথ সেট করা
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# প্রফেশনাল এইচটিএমএল ডিজাইন (আপনার নম্বর সহ)
-HTML_TEMPLATE = """
+# static ফোল্ডার না থাকলে তৈরি করা
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+# ডাটাবেজ একদম খালি রাখা হয়েছে (আপনার ইনস্ট্রাকশন অনুযায়ী)
+products = {}
+
+HTML_LAYOUT = """
 <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sardar House - Premium Collection</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Sardar House | Exclusive Shop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        :root {
-            --gold: #dfbd69;
-            --dark-bg: #0d0d0d;
-            --glass: rgba(255, 255, 255, 0.05);
-        }
-
-        body {
-            background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
-            color: #ffffff;
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-        }
-
-        .header {
-            text-align: center;
-            padding: 50px 0;
-        }
-
-        .header h1 {
-            font-size: 3rem;
-            color: var(--gold);
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 5px;
-            text-shadow: 2px 2px 10px rgba(223, 189, 105, 0.3);
-        }
-
-        .header p {
-            color: #888;
-            letter-spacing: 2px;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .admin-panel {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(223, 189, 105, 0.2);
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 50px;
-        }
-
-        input, button {
-            padding: 12px;
-            margin: 5px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: #111;
-            color: white;
-            width: calc(100% - 30px);
-        }
-
-        button {
-            background: var(--gold) !important;
-            color: #000 !important;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            transition: 0.3s;
-            width: auto;
-            padding: 12px 30px;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(223, 189, 105, 0.4);
-        }
-
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
-        }
-
-        .product-card {
-            background: var(--glass);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 20px;
-            text-align: center;
-            transition: 0.4s;
-        }
-
-        .product-card:hover {
-            border-color: var(--gold);
-            transform: scale(1.02);
-        }
-
-        .product-card img {
-            width: 100%;
-            height: 300px;
-            object-fit: cover;
-            border-radius: 15px;
-        }
-
-        .price {
-            color: var(--gold);
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .whatsapp-btn {
-            display: inline-block;
-            background: #25D366;
-            color: white;
-            padding: 12px 20px;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: bold;
-            margin-top: 10px;
-            transition: 0.3s;
-        }
-        
-        .whatsapp-btn:hover {
-            background: #1eb954;
-        }
+        body { background: #050505; color: #D4AF37; font-family: 'Segoe UI', sans-serif; }
+        .nav-header { padding: 40px; border-bottom: 2px solid #D4AF37; background: #000; text-align: center; }
+        .product-card { background: #111; border: 1px solid #222; border-radius: 15px; padding: 20px; text-align: center; transition: 0.3s; }
+        .product-card:hover { border-color: #D4AF37; }
+        .prod-img { width: 100%; height: 280px; object-fit: contain; background: #fff; border-radius: 12px; }
+        .admin-section { background: #111; border: 2px dashed #444; padding: 30px; border-radius: 20px; margin-top: 60px; }
+        .delete-btn { color: #ff4444; text-decoration: none; font-size: 14px; margin-top: 10px; display: inline-block; }
+        .empty-msg { padding: 50px; color: #777; border: 1px dashed #333; border-radius: 15px; }
     </style>
 </head>
 <body>
-
-<div class="header">
-    <h1>Sardar House</h1>
-    <p>PREMIUM MENSWEAR COLLECTIONS</p>
-</div>
-
-<div class="container">
-    <div class="admin-panel">
-        <h3 style="color: var(--gold);">নতুন পণ্য যোগ করুন (ম্যানেজমেন্ট)</h3>
-        <form action="/add" method="post">
-            <input type="text" name="name" placeholder="পাঞ্জাবির নাম (উদা: রাজকীয় সিল্ক)" required>
-            <input type="text" name="price" placeholder="দাম (উদা: ১৮০০৳)" required>
-            <input type="text" name="img_url" placeholder="ছবির লিঙ্ক (URL)" required>
-            <button type="submit">যোগ করুন</button>
-        </form>
+    <div class="nav-header">
+        <h1 class="display-4 fw-bold">SARDAR HOUSE</h1>
+        <p class="text-secondary text-uppercase" style="letter-spacing: 3px;">Premium Collections</p>
     </div>
-
-    <div class="product-grid">
-        {% for product in products %}
-        <div class="product-card">
-            <img src="{{ product.img_url }}" alt="Punjabi">
-            <h3>{{ product.name }}</h3>
-            <div class="price">{{ product.price }}</div>
-            <a href="https://wa.me/8801877278210?text=আসসালামু আলাইকুম, আমি এই পাঞ্জাবিটি কিনতে চাই: {{ product.name }} (দাম: {{ product.price }})" class="whatsapp-btn" target="_blank">WhatsApp অর্ডার</a>
+    
+    <div class="container py-5">
+        {{ content|safe }}
+        
+        <div class="admin-section shadow-lg">
+            <h3 class="text-center mb-4">নতুন পণ্য যোগ করুন (ম্যানেজমেন্ট)</h3>
+            <form action="/add" method="POST" enctype="multipart/form-data" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="name" class="form-control bg-dark text-white border-secondary" placeholder="পণ্যের নাম (যেমন: কাটারি পাঞ্জাবি)" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="price" class="form-control bg-dark text-white border-secondary" placeholder="দাম (টাকায়)" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="file" name="file" class="form-control bg-dark text-white border-secondary" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">যোগ করুন</button>
+                </div>
+            </form>
         </div>
-        {% endfor %}
     </div>
-
-    {% if not products %}
-    <p style="text-align: center; color: #666; margin-top: 50px;">বর্তমানে কোনো পণ্য স্টকে নেই। উপর থেকে যোগ করুন।</p>
-    {% endif %}
-</div>
-
 </body>
 </html>
 """
 
 @app.route('/')
 def home():
-    return render_template_string(HTML_TEMPLATE, products=products)
+    if not products:
+        content = '<div class="empty-msg text-center"><h3>বর্তমানে কোনো পণ্য স্টকে নেই।</h3><p>নিচের ফরম ব্যবহার করে আপনার প্রথম পণ্যটি যোগ করুন।</p></div>'
+    else:
+        content = '<div class="row g-4">'
+        for pid, p in products.items():
+            img_url = url_for('static', filename=p['img'])
+            content += f'''
+            <div class="col-md-4 col-6">
+                <div class="product-card shadow">
+                    <img src="{img_url}" class="prod-img">
+                    <h4 class="mt-3 fw-bold">{p['name']}</h4>
+                    <h5 class="text-white mb-2">৳ {p['price']}</h5>
+                    <a href="/delete/{pid}" class="delete-btn" onclick="return confirm('পণ্যটি কি মুছে ফেলবেন?')">মুছে ফেলুন</a>
+                </div>
+            </div>'''
+        content += '</div>'
+    return render_template_string(HTML_LAYOUT, content=content)
 
 @app.route('/add', methods=['POST'])
 def add_product():
     name = request.form.get('name')
     price = request.form.get('price')
-    img_url = request.form.get('img_url')
-    if name and price and img_url:
-        products.append({'name': name, 'price': price, 'img_url': img_url})
-    return redirect(url_for('home'))
+    file = request.files.get('file')
+    if name and price and file:
+        filename = f"{name.replace(' ', '_')}.jpg"
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        new_id = str(len(products) + 1)
+        while new_id in products:
+            new_id = str(int(new_id) + 1)
+        products[new_id] = {'name': name, 'price': price, 'img': filename}
+    return redirect('/')
+
+@app.route('/delete/<pid>')
+def delete_product(pid):
+    if pid in products:
+        del products[pid]
+    return redirect('/')
 
 if __name__ == '__main__':
     app.run(debug=True)
