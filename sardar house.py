@@ -38,7 +38,7 @@ def get_layout(content_html, active_page):
         <style>
             body {{ background-color: #0a0a0a; color: #D4AF37; font-family: 'Segoe UI', sans-serif; padding-top: 100px; }}
             .navbar {{ background: rgba(0,0,0,0.98); border-bottom: 1px solid rgba(212,175,55,0.3); }}
-            .navbar-brand {{ color: #D4AF37 !important; font-weight: bold; letter-spacing: 2px; }}
+            .navbar-brand {{ color: #D4AF37 !important; font-weight: bold; letter-spacing: 2px; text-decoration: none; }}
             .nav-link {{ color: #888 !important; font-weight: 600; margin: 0 10px; transition: 0.3s; text-decoration: none; }}
             .active-link, .nav-link:hover {{ color: #D4AF37 !important; }}
             .card-premium {{ background: rgba(20,20,20,0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; height: 100%; }}
@@ -91,4 +91,35 @@ def logout():
 @app.route('/shop')
 def shop():
     products = get_db_products()
-    content = '<div class="row g
+    content = '<div class="row g-4">'
+    if not products:
+        content += '<div class="col-12 text-center p-5 card-premium"><h4>বর্তমানে কোনো পণ্য নেই।</h4></div>'
+    else:
+        for pid, p in products.items():
+            wa_link = f"https://wa.me/8801877278210?text=আসসালামু আলাইকুম, আমি এই পণ্যটি নিতে চাই: {p['name']}"
+            content += f'''
+            <div class="col-sm-6 col-lg-4">
+                <div class="card-premium shadow-sm">
+                    <img src="{p['img']}" class="product-img mb-3" alt="{p['name']}">
+                    <h4 class="fw-bold">{p['name']}</h4>
+                    <h5 class="text-white my-3">৳ {p['price']}</h5>
+                    <a href="{wa_link}" target="_blank" class="whatsapp-btn">WhatsApp অর্ডার</a>
+                </div>
+            </div>'''
+    content += '</div>'
+    return render_template_string(get_layout(content, 'shop'))
+
+@app.route('/about')
+def about():
+    return render_template_string(get_layout('<div class="card-premium"><h2>আমাদের সম্পর্কে</h2><p>প্রিমিয়াম কোয়ালিটি নিশ্চিত করাই সর্দার হাউসের লক্ষ্য।</p></div>', 'about'))
+
+@app.route('/contact')
+def contact():
+    return render_template_string(get_layout('<div class="card-premium"><h2>যোগাযোগ</h2><p>📞 01877278210</p></div>', 'contact'))
+
+@app.route('/policy')
+def policy():
+    return render_template_string(get_layout('<div class="card-premium"><h2>রিটার্ন পলিসি</h2><p>৩ দিনের মধ্যে এক্সচেঞ্জ সুবিধা।</p></div>', 'policy'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
