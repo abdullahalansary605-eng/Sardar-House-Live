@@ -2,25 +2,24 @@ import urllib.request, csv, io
 from flask import Flask, render_template_string, session, url_for, request, redirect
 
 app = Flask(__name__)
-app.secret_key = "sardar_house_final_key"
+app.secret_key = "sardar_house_fixed_key_v2"
 
-# আপনার নতুন ও সঠিক CSV লিঙ্ক
+# আপনার লেটেস্ট CSV লিঙ্ক
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSa5oJwdZneTG3Ca9QZJpRg91ssb5haptW1eCRnyEsiCAPXzoxs0IDl9exQfQjiHsIekG4EsxnIYGGr/pub?output=csv"
 
-# আপনার অ্যাডমিন পাসওয়ার্ড
+# আপনার পাসওয়ার্ড
 ADMIN_PASSWORD = "1212716274"
 
 def get_db_products():
     try:
-        # গুগল শিট থেকে ডাটা রিড করা
         response = urllib.request.urlopen(SHEET_CSV_URL)
         dat = response.read().decode('utf-8')
         f = io.StringIO(dat)
         reader = csv.DictReader(f)
-        # শিটের কলাম অনুযায়ী (ID, Name, Price, Image url) ডাটা সাজানো
+        # শিটের কলাম 'ID', 'Name', 'Price', 'Image url' অনুযায়ী ডাটা সাজানো
         return {row['ID']: {'name': row['Name'], 'price': row['Price'], 'img': row['Image url']} for row in reader}
     except Exception as e:
-        print(f"Error fetching data: {e}")
+        print(f"Database Error: {e}")
         return {}
 
 def get_layout(content_html, active_page):
@@ -79,7 +78,7 @@ def shop():
     products = get_db_products()
     content = '<div class="row g-4">'
     if not products:
-        content += '<div class="col-12 text-center p-5 card-premium"><h4>বর্তমানে কোনো পণ্য নেই। গুগল শিটে তথ্য চেক করুন।</h4></div>'
+        content += '<div class="col-12 text-center p-5 card-premium"><h4>বর্তমানে কোনো পণ্য নেই।</h4></div>'
     else:
         for pid, p in products.items():
             wa_link = f"https://wa.me/8801877278210?text=আসসালামু আলাইকুম, আমি এই পণ্যটি নিতে চাই: {p['name']}"
@@ -99,4 +98,9 @@ def shop():
 def login():
     error = ""
     if request.method == 'POST':
-        if request.form.get('password') == ADMIN
+        if request.form.get('password') == ADMIN_PASSWORD:
+            session['is_admin'] = True
+            return redirect(url_for('shop'))
+        else:
+            error = "ভুল পাসওয়ার্ড!"
+    content = f'<div class="row justify-content-center"><div class="col-md-4 card-premium text-center"><h3>Admin Access</h3><form
