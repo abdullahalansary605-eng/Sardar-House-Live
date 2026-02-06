@@ -2,24 +2,25 @@ import urllib.request, csv, io
 from flask import Flask, render_template_string, session, url_for, request, redirect
 
 app = Flask(__name__)
-app.secret_key = "sardar_house_ultra_secure_key"
+app.secret_key = "sardar_house_final_key"
 
-# আপনার নতুন CSV ডাটাবেজ লিঙ্ক
+# আপনার নতুন ও সঠিক CSV লিঙ্ক
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSa5oJwdZneTG3Ca9QZJpRg91ssb5haptW1eCRnyEsiCAPXzoxs0IDl9exQfQjiHsIekG4EsxnIYGGr/pub?output=csv"
 
-# আপনার পাসওয়ার্ড
+# আপনার অ্যাডমিন পাসওয়ার্ড
 ADMIN_PASSWORD = "1212716274"
 
 def get_db_products():
     try:
+        # গুগল শিট থেকে ডাটা রিড করা
         response = urllib.request.urlopen(SHEET_CSV_URL)
         dat = response.read().decode('utf-8')
         f = io.StringIO(dat)
         reader = csv.DictReader(f)
-        # গুগল শিটের কলাম অনুযায়ী ডাটা পড়া
+        # শিটের কলাম অনুযায়ী (ID, Name, Price, Image url) ডাটা সাজানো
         return {row['ID']: {'name': row['Name'], 'price': row['Price'], 'img': row['Image url']} for row in reader}
     except Exception as e:
-        print(f"Database Error: {e}")
+        print(f"Error fetching data: {e}")
         return {}
 
 def get_layout(content_html, active_page):
@@ -70,7 +71,7 @@ def get_layout(content_html, active_page):
 
 @app.route('/')
 def home():
-    content = '<div class="text-center py-5 mt-lg-5"><h1 class="display-3 fw-bold">SARDAR HOUSE</h1><p class="lead">Your Fashion, Our Passion.</p><a href="/shop" class="btn btn-warning btn-lg mt-3 px-5 fw-bold shadow">শপ ভিজিট করুন</a></div>'
+    content = '<div class="text-center py-5 mt-lg-5"><h1 class="display-3 fw-bold">SARDAR HOUSE</h1><p class="lead">প্রিমিয়াম কালেকশন - আভিজাত্যের অন্য নাম</p><a href="/shop" class="btn btn-warning btn-lg mt-3 px-5 fw-bold shadow">শপ ভিজিট করুন</a></div>'
     return render_template_string(get_layout(content, 'home'))
 
 @app.route('/shop')
@@ -78,7 +79,7 @@ def shop():
     products = get_db_products()
     content = '<div class="row g-4">'
     if not products:
-        content += '<div class="col-12 text-center p-5 card-premium"><h4>বর্তমানে কোনো পণ্য নেই। গুগল শিটে পণ্য যোগ করুন।</h4></div>'
+        content += '<div class="col-12 text-center p-5 card-premium"><h4>বর্তমানে কোনো পণ্য নেই। গুগল শিটে তথ্য চেক করুন।</h4></div>'
     else:
         for pid, p in products.items():
             wa_link = f"https://wa.me/8801877278210?text=আসসালামু আলাইকুম, আমি এই পণ্যটি নিতে চাই: {p['name']}"
@@ -98,25 +99,4 @@ def shop():
 def login():
     error = ""
     if request.method == 'POST':
-        if request.form.get('password') == ADMIN_PASSWORD:
-            session['is_admin'] = True
-            return redirect(url_for('shop'))
-        error = "ভুল পাসওয়ার্ড!"
-    content = f'<div class="row justify-content-center"><div class="col-md-4 card-premium text-center"><h3>Admin Access</h3><form method="POST"><input type="password" name="password" class="form-control mb-3" placeholder="পাসওয়ার্ড" required><button type="submit" class="btn btn-warning w-100 fw-bold">Login</button></form><p class="text-danger mt-3">{error}</p></div></div>'
-    return render_template_string(get_layout(content, 'login'))
-
-@app.route('/logout')
-def logout():
-    session.pop('is_admin', None)
-    return redirect(url_for('home'))
-
-@app.route('/about')
-def about():
-    return render_template_string(get_layout('<div class="card-premium"><h2>আমাদের সম্পর্কে</h2><p>সর্দার হাউস একটি বিশ্বস্ত প্রিমিয়াম অনলাইন শপ।</p></div>', 'about'))
-
-@app.route('/contact')
-def contact():
-    return render_template_string(get_layout('<div class="card-premium"><h2>যোগাযোগ</h2><p>📞 হটলাইন: 01877278210</p></div>', 'contact'))
-
-if __name__ == '__main__':
-    app.run(debug=True)
+        if request.form.get('password') == ADMIN
