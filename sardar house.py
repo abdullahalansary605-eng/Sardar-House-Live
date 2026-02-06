@@ -1,13 +1,13 @@
-import urllib.request, csv, io, os
+import urllib.request, csv, io
 from flask import Flask, render_template_string, session, url_for, request, redirect
 
 app = Flask(__name__)
-app.secret_key = "sardar_house_exclusive_key"
+app.secret_key = "sardar_house_ultra_secure_key"
 
-# আপনার গুগল শিট ডাটাবেজ লিঙ্ক
-SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQUw7rSYMFBFTyun0JDkeUgwQb51YiGS_anOVzYZQR9hrUxS4UdFUf5hCbQrl4UJhvn9ExsrZglMSWT/pub?output=csv"
+# আপনার নতুন CSV ডাটাবেজ লিঙ্ক
+SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSa5oJwdZneTG3Ca9QZJpRg91ssb5haptW1eCRnyEsiCAPXzoxs0IDl9exQfQjiHsIekG4EsxnIYGGr/pub?output=csv"
 
-# আপনার দেওয়া নতুন পাসওয়ার্ড
+# আপনার পাসওয়ার্ড
 ADMIN_PASSWORD = "1212716274"
 
 def get_db_products():
@@ -16,13 +16,14 @@ def get_db_products():
         dat = response.read().decode('utf-8')
         f = io.StringIO(dat)
         reader = csv.DictReader(f)
-        return {row['Id']: {'name': row['Name'], 'price': row['Price'], 'img': row['Image Url']} for row in reader}
+        # গুগল শিটের কলাম অনুযায়ী ডাটা পড়া
+        return {row['ID']: {'name': row['Name'], 'price': row['Price'], 'img': row['Image url']} for row in reader}
     except Exception as e:
         print(f"Database Error: {e}")
         return {}
 
 def get_layout(content_html, active_page):
-    menu_items = [('home', 'হোম'), ('shop', 'শপ'), ('about', 'আমাদের সম্পর্কে'), ('contact', 'যোগাযোগ'), ('policy', 'রিটার্ন পলিসি')]
+    menu_items = [('home', 'হোম'), ('shop', 'শপ'), ('about', 'আমাদের সম্পর্কে'), ('contact', 'যোগাযোগ')]
     nav_links = "".join([f'<a href="{url_for(r)}" class="nav-link {"active-link" if active_page==r else ""}">{l}</a>' for r, l in menu_items])
     
     auth_action = '<a href="/logout" class="btn btn-sm btn-outline-danger ms-lg-2">Logout</a>' if 'is_admin' in session else '<a href="/login" class="btn btn-sm btn-outline-warning ms-lg-2">Admin</a>'
@@ -41,8 +42,9 @@ def get_layout(content_html, active_page):
             .navbar-brand {{ color: #D4AF37 !important; font-weight: bold; letter-spacing: 2px; text-decoration: none; }}
             .nav-link {{ color: #888 !important; font-weight: 600; margin: 0 10px; transition: 0.3s; text-decoration: none; }}
             .active-link, .nav-link:hover {{ color: #D4AF37 !important; }}
-            .card-premium {{ background: rgba(20,20,20,0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; height: 100%; }}
-            .product-img {{ width: 100%; height: 280px; object-fit: cover; border-radius: 15px; }}
+            .card-premium {{ background: rgba(20,20,20,0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; transition: 0.4s; height: 100%; }}
+            .card-premium:hover {{ border-color: #D4AF37; transform: translateY(-5px); }}
+            .product-img {{ width: 100%; height: 280px; object-fit: cover; border-radius: 15px; background: #111; }}
             .whatsapp-btn {{ background: #25D366; color: white !important; border-radius: 10px; text-align: center; padding: 12px; display: block; text-decoration: none; font-weight: bold; }}
             .form-control {{ background: #151515 !important; border: 1px solid #333 !important; color: white !important; }}
             @media (max-width: 768px) {{ body {{ padding-top: 80px; }} .navbar-collapse {{ background: #000; padding: 20px; border-radius: 10px; margin-top: 10px; }} }}
@@ -61,7 +63,6 @@ def get_layout(content_html, active_page):
             </div>
         </nav>
         <div class="container">{content_html}</div>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     </body>
     </html>
     """
@@ -69,8 +70,29 @@ def get_layout(content_html, active_page):
 
 @app.route('/')
 def home():
-    content = '<div class="text-center py-5 mt-lg-5"><h1 class="display-3 fw-bold">SARDAR HOUSE</h1><p class="lead">প্রিমিয়াম কালেকশন - আভিজাত্যের অন্য নাম</p><a href="/shop" class="btn btn-warning btn-lg mt-3 px-5 fw-bold">শপ ভিজিট করুন</a></div>'
+    content = '<div class="text-center py-5 mt-lg-5"><h1 class="display-3 fw-bold">SARDAR HOUSE</h1><p class="lead">Your Fashion, Our Passion.</p><a href="/shop" class="btn btn-warning btn-lg mt-3 px-5 fw-bold shadow">শপ ভিজিট করুন</a></div>'
     return render_template_string(get_layout(content, 'home'))
+
+@app.route('/shop')
+def shop():
+    products = get_db_products()
+    content = '<div class="row g-4">'
+    if not products:
+        content += '<div class="col-12 text-center p-5 card-premium"><h4>বর্তমানে কোনো পণ্য নেই। গুগল শিটে পণ্য যোগ করুন।</h4></div>'
+    else:
+        for pid, p in products.items():
+            wa_link = f"https://wa.me/8801877278210?text=আসসালামু আলাইকুম, আমি এই পণ্যটি নিতে চাই: {p['name']}"
+            content += f'''
+            <div class="col-sm-6 col-lg-4">
+                <div class="card-premium shadow-sm">
+                    <img src="{p['img']}" class="product-img mb-3" alt="{p['name']}" onerror="this.src='https://via.placeholder.com/300?text=Image+Loading...'">
+                    <h4 class="fw-bold">{p['name']}</h4>
+                    <h5 class="text-white my-3">৳ {p['price']}</h5>
+                    <a href="{wa_link}" target="_blank" class="whatsapp-btn">WhatsApp অর্ডার</a>
+                </div>
+            </div>'''
+    content += '</div>'
+    return render_template_string(get_layout(content, 'shop'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -88,38 +110,13 @@ def logout():
     session.pop('is_admin', None)
     return redirect(url_for('home'))
 
-@app.route('/shop')
-def shop():
-    products = get_db_products()
-    content = '<div class="row g-4">'
-    if not products:
-        content += '<div class="col-12 text-center p-5 card-premium"><h4>বর্তমানে কোনো পণ্য নেই।</h4></div>'
-    else:
-        for pid, p in products.items():
-            wa_link = f"https://wa.me/8801877278210?text=আসসালামু আলাইকুম, আমি এই পণ্যটি নিতে চাই: {p['name']}"
-            content += f'''
-            <div class="col-sm-6 col-lg-4">
-                <div class="card-premium shadow-sm">
-                    <img src="{p['img']}" class="product-img mb-3" alt="{p['name']}">
-                    <h4 class="fw-bold">{p['name']}</h4>
-                    <h5 class="text-white my-3">৳ {p['price']}</h5>
-                    <a href="{wa_link}" target="_blank" class="whatsapp-btn">WhatsApp অর্ডার</a>
-                </div>
-            </div>'''
-    content += '</div>'
-    return render_template_string(get_layout(content, 'shop'))
-
 @app.route('/about')
 def about():
-    return render_template_string(get_layout('<div class="card-premium"><h2>আমাদের সম্পর্কে</h2><p>প্রিমিয়াম কোয়ালিটি নিশ্চিত করাই সর্দার হাউসের লক্ষ্য।</p></div>', 'about'))
+    return render_template_string(get_layout('<div class="card-premium"><h2>আমাদের সম্পর্কে</h2><p>সর্দার হাউস একটি বিশ্বস্ত প্রিমিয়াম অনলাইন শপ।</p></div>', 'about'))
 
 @app.route('/contact')
 def contact():
-    return render_template_string(get_layout('<div class="card-premium"><h2>যোগাযোগ</h2><p>📞 01877278210</p></div>', 'contact'))
-
-@app.route('/policy')
-def policy():
-    return render_template_string(get_layout('<div class="card-premium"><h2>রিটার্ন পলিসি</h2><p>৩ দিনের মধ্যে এক্সচেঞ্জ সুবিধা।</p></div>', 'policy'))
+    return render_template_string(get_layout('<div class="card-premium"><h2>যোগাযোগ</h2><p>📞 হটলাইন: 01877278210</p></div>', 'contact'))
 
 if __name__ == '__main__':
     app.run(debug=True)
