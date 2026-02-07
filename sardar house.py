@@ -1,122 +1,122 @@
-import urllib.request, csv, io
+import requests
 from flask import Flask, render_template_string, session, url_for, request, redirect
+import io
 
 app = Flask(__name__)
-app.secret_key = "sardar_house_permanent_key"
+app.secret_key = "sardar_house_airtable_final_v1"
 
-# আপনার লেটেস্ট CSV লিঙ্ক
-SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSa5oJwdZneTG3Ca9QZJpRg91ssb5haptW1eCRnyEsiCAPXzoxs0IDl9exQfQjiHsIekG4EsxnIYGGr/pub?output=csv"
+# --- আপনার এয়ারটেবল কনফিগারেশন ---
+# আপনার দেওয়া টোকেনটি এখানে স্ট্রিং হিসেবে বসানো হয়েছে
+AIRTABLE_TOKEN = "pat84ZiUqxXwgYvSq.0d42c21d500190d30683294d301d98ae5733370aaa91917aaef840495df95fae"
+BASE_ID = "appNA47UFkggOEi6G"
+TABLE_NAME = "Table 1" 
+# ----------------------------------
 
-# আপনার পাসওয়ার্ড
 ADMIN_PASSWORD = "1212716274"
 
-def get_db_products():
+def get_airtable_products():
+    url = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
+    headers = {
+        "Authorization": f"Bearer {AIRTABLE_TOKEN}",
+        "Content-Type": "application/json"
+    }
     try:
-        response = urllib.request.urlopen(SHEET_CSV_URL)
-        dat = response.read().decode('utf-8')
-        f = io.StringIO(dat)
-        reader = csv.DictReader(f)
-        # শিটের কলাম অনুযায়ী ডাটা সাজানো
-        return {row['ID']: {'name': row['Name'], 'price': row['Price'], 'img': row['Image url']} for row in reader}
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            records = response.json().get('records', [])
+            # ডাটাবেজ থেকে কলামের নাম অনুযায়ী ডাটা আনা
+            return [r['fields'] for r in records]
+        else:
+            print(f"Airtable Error: {response.status_code} - {response.text}")
+            return []
     except Exception as e:
-        print(f"Database Error: {e}")
-        return {}
+        print(f"Connection Error: {e}")
+        return []
 
 def get_layout(content_html, active_page):
-    menu_items = [('home', 'হোম'), ('shop', 'শপ'), ('about', 'আমাদের সম্পর্কে'), ('contact', 'যোগাযোগ')]
-    nav_links = "".join([f'<a href="{url_for(r)}" class="nav-link {"active-link" if active_page==r else ""}">{l}</a>' for r, l in menu_items])
-    auth_action = '<a href="/logout" class="btn btn-sm btn-outline-danger ms-lg-2">Logout</a>' if 'is_admin' in session else '<a href="/login" class="btn btn-sm btn-outline-warning ms-lg-2">Admin</a>'
+    nav_links = [('/', 'হোম', 'h'), ('/shop', 'শপ', 's')]
+    nav_html = "".join([f'<a href="{u}" style="color:{"#D4AF37" if active_page==p else "#888"}; margin:0 15px; text-decoration:none; font-weight:bold;">{l}</a>' for u, l, p in nav_links])
+    auth = '<a href="/logout" style="color:#ff4444; margin-left:15px; text-decoration:none; font-size: 0.9rem;">Logout</a>' if 'is_admin' in session else '<a href="/login" style="color:#D4AF37; margin-left:15px; text-decoration:none; font-size: 0.9rem;">Admin</a>'
 
-    template = f"""
+    return f"""
     <!DOCTYPE html>
     <html lang="bn">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Sardar House | Premium Shop</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
-            body {{ background-color: #0a0a0a; color: #D4AF37; font-family: 'Segoe UI', sans-serif; padding-top: 100px; }}
-            .navbar {{ background: rgba(0,0,0,0.98); border-bottom: 1px solid rgba(212,175,55,0.3); }}
-            .navbar-brand {{ color: #D4AF37 !important; font-weight: bold; letter-spacing: 2px; text-decoration: none; }}
-            .nav-link {{ color: #888 !important; font-weight: 600; margin: 0 10px; transition: 0.3s; text-decoration: none; }}
-            .active-link, .nav-link:hover {{ color: #D4AF37 !important; }}
-            .card-premium {{ background: rgba(20,20,20,0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; transition: 0.4s; height: 100%; }}
-            .card-premium:hover {{ border-color: #D4AF37; transform: translateY(-5px); }}
-            .product-img {{ width: 100%; height: 280px; object-fit: cover; border-radius: 15px; background: #111; }}
-            .whatsapp-btn {{ background: #25D366; color: white !important; border-radius: 10px; text-align: center; padding: 12px; display: block; text-decoration: none; font-weight: bold; }}
-            .form-control {{ background: #151515 !important; border: 1px solid #333 !important; color: white !important; }}
-            @media (max-width: 768px) {{ body {{ padding-top: 80px; }} .navbar-collapse {{ background: #000; padding: 20px; border-radius: 10px; margin-top: 10px; }} }}
+            body {{ background-color: #0a0a0a; color: #D4AF37; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding-top: 100px; text-align: center; }}
+            .navbar {{ background: rgba(0,0,0,0.95); padding: 20px; position: fixed; top: 0; width: 100%; border-bottom: 1px solid #333; z-index: 1000; box-sizing: border-box; }}
+            .card {{ background: #111; border: 1px solid #222; border-radius: 15px; padding: 15px; margin: 15px; display: inline-block; width: 280px; transition: 0.3s; vertical-align: top; text-align: left; }}
+            .card:hover {{ border-color: #D4AF37; transform: translateY(-5px); }}
+            .product-img {{ width: 100%; height: 250px; object-fit: cover; border-radius: 10px; background: #1a1a1a; }}
+            .price {{ color: #fff; font-size: 1.3rem; margin: 10px 0; font-weight: bold; }}
+            .wa-btn {{ background: #25D366; color: white; padding: 12px; display: block; text-decoration: none; border-radius: 8px; text-align: center; font-weight: bold; margin-top: 10px; }}
+            .wa-btn:hover {{ background: #1ebe57; }}
+            h3 {{ margin: 10px 0; font-size: 1.1rem; min-height: 50px; color: #D4AF37; }}
         </style>
     </head>
     <body>
-        <nav class="navbar navbar-expand-lg fixed-top">
-            <div class="container">
-                <a class="navbar-brand" href="/">SARDAR HOUSE</a>
-                <button class="navbar-toggler border-warning" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <div class="navbar-nav ms-auto">{nav_links} {auth_action}</div>
-                </div>
-            </div>
-        </nav>
-        <div class="container">{content_html}</div>
+        <div class="navbar">
+            <span style="font-size: 1.5rem; font-weight: bold; letter-spacing: 2px;">SARDAR HOUSE</span><br><br>
+            {nav_html} {auth}
+        </div>
+        <div style="padding: 20px;">{content_html}</div>
     </body>
     </html>
     """
-    return template
 
 @app.route('/')
 def home():
-    content = '<div class="text-center py-5 mt-lg-5"><h1 class="display-3 fw-bold">SARDAR HOUSE</h1><p class="lead">প্রিমিয়াম কালেকশন - আভিজাত্যের অন্য নাম</p><a href="/shop" class="btn btn-warning btn-lg mt-3 px-5 fw-bold shadow">শপ ভিজিট করুন</a></div>'
-    return render_template_string(get_layout(content, 'home'))
+    content = """
+    <div style="margin-top: 50px;">
+        <h1 style="font-size: 3rem; margin-bottom: 10px;">SARDAR HOUSE</h1>
+        <p style="font-size: 1.2rem; color: #888;">আভিজাত্য ও আধুনিকতার এক অনন্য সমন্বয়</p>
+        <br>
+        <a href="/shop" style="background: #D4AF37; color: #000; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 1.1rem; display: inline-block;">কালেকশন দেখুন</a>
+    </div>
+    """
+    return render_template_string(get_layout(content, 'h'))
 
 @app.route('/shop')
 def shop():
-    products = get_db_products()
-    content = '<div class="row g-4">'
+    products = get_airtable_products()
     if not products:
-        content += '<div class="col-12 text-center p-5 card-premium"><h4>বর্তমানে কোনো পণ্য নেই।</h4></div>'
-    else:
-        for pid, p in products.items():
-            wa_link = f"https://wa.me/8801877278210?text=আসসালামু আলাইকুম, আমি এই পণ্যটি নিতে চাই: {p['name']}"
-            content += f'''
-            <div class="col-sm-6 col-lg-4">
-                <div class="card-premium shadow-sm">
-                    <img src="{p['img']}" class="product-img mb-3" alt="{p['name']}" onerror="this.src='https://via.placeholder.com/300?text=Image+Loading...'">
-                    <h4 class="fw-bold">{p['name']}</h4>
-                    <h5 class="text-white my-3">৳ {p['price']}</h5>
-                    <a href="{wa_link}" target="_blank" class="whatsapp-btn">WhatsApp অর্ডার</a>
-                </div>
-            </div>'''
-    content += '</div>'
-    return render_template_string(get_layout(content, 'shop'))
+        return render_template_string(get_layout('<div style="padding: 50px;"><h2>বর্তমানে কোনো পণ্য নেই।</h2><p>অনুগ্রহ করে এয়ারটেবল ডাটাবেজে পণ্য যোগ করুন।</p></div>', 's'))
+    
+    html = '<div style="display: flex; flex-wrap: wrap; justify-content: center; max-width: 1200px; margin: 0 auto;">'
+    for p in products:
+        # এয়ারটেবল কলামের নাম: 'Name', 'Price', 'Image_URL'
+        name = p.get('Name', 'Premium Product')
+        price = p.get('Price', 'TBA')
+        img = p.get('Image_URL', 'https://via.placeholder.com/250?text=Sardar+House')
+        
+        wa_link = f"https://wa.me/8801877278210?text=আসসালামু আলাইকুম, আমি এই পণ্যটি নিতে চাই: {name}"
+        
+        html += f"""
+        <div class="card">
+            <img src="{img}" class="product-img" onerror="this.src='https://via.placeholder.com/250?text=Image+Loading...'">
+            <h3>{name}</h3>
+            <div class="price">৳ {price}</div>
+            <a href="{wa_link}" target="_blank" class="wa-btn">WhatsApp অর্ডার</a>
+        </div>
+        """
+    html += '</div>'
+    return render_template_string(get_layout(html, 's'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    error = ""
     if request.method == 'POST':
-        if request.form.get('password') == ADMIN_PASSWORD:
+        if request.form.get('pass') == ADMIN_PASSWORD:
             session['is_admin'] = True
             return redirect(url_for('shop'))
-        else:
-            error = "ভুল পাসওয়ার্ড!"
-    content = '<div class="row justify-content-center"><div class="col-md-4 card-premium text-center"><h3>Admin Access</h3><form method="POST"><input type="password" name="password" class="form-control mb-3" placeholder="পাসওয়ার্ড" required><button type="submit" class="btn btn-warning w-100 fw-bold">Login</button></form><p class="text-danger mt-3">' + error + '</p></div></div>'
-    return render_template_string(get_layout(content, 'login'))
+    return render_template_string(get_layout('<div style="margin-top: 50px;"><h3>Admin Login</h3><form method="POST"><input type="password" name="pass" placeholder="Password" style="padding: 12px; border-radius: 5px; border: 1px solid #333; background: #111; color: #fff; width: 250px;"><br><br><button type="submit" style="background: #D4AF37; padding: 10px 30px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Login</button></form></div>', ''))
 
 @app.route('/logout')
 def logout():
     session.pop('is_admin', None)
     return redirect(url_for('home'))
-
-@app.route('/about')
-def about():
-    return render_template_string(get_layout('<div class="card-premium"><h2>আমাদের সম্পর্কে</h2><p>সর্দার হাউস একটি বিশ্বস্ত প্রিমিয়াম অনলাইন শপ।</p></div>', 'about'))
-
-@app.route('/contact')
-def contact():
-    return render_template_string(get_layout('<div class="card-premium"><h2>যোগাযোগ</h2><p>📞 হটলাইন: 01877278210</p></div>', 'contact'))
 
 if __name__ == '__main__':
     app.run(debug=True)
